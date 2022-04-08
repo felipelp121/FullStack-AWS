@@ -1,0 +1,61 @@
+service: projeto-final
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - "dynamodb:Query"
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:Scan"
+          Resource:
+            - { "Fn::GetAtt": ["projectDynamo", "Arn"] }
+
+functions:
+  sendEmail:
+    handler: sendEmail.handler
+    events:
+      - http:
+          path: send
+          method: post
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: false
+  sendHistory:
+    handler: sendHistory.handler
+    events:
+      - http:
+          path: history/{email}
+          method: get
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: false
+
+resources:
+  Resources:
+    projectDynamo:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: projectDynamo
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: emailTo
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: emailTo
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1

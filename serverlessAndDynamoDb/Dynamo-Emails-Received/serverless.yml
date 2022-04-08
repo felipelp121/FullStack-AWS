@@ -1,0 +1,61 @@
+service: receivedEmail
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - "dynamodb:Query"
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:Scan"
+          Resource:
+            - { "Fn::GetAtt": ["dynamoReceivedEmail", "Arn"] }
+
+functions:
+  receivedEmail:
+    handler: receivedEmail.handler
+    events:
+      - http:
+          path: received
+          method: post
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: false
+  receivedHistory:
+    handler: receivedHistory.handler
+    events:
+      - http:
+          path: history/{email}
+          method: get
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: false
+
+resources:
+  Resources:
+    dynamoReceivedEmail:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: dynamoReceivedEmail
+        AttributeDefinitions:
+          - AttributeName: emailTo
+            AttributeType: S
+          - AttributeName: messageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: emailTo
+            KeyType: HASH
+          - AttributeName: messageId
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
